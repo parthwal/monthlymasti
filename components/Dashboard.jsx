@@ -1,15 +1,58 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
-// Carousel with controls, fullscreen resizing, and mobile swipe
+// LazyImage: loads src only when near viewport
+function LazyImage({
+  src,
+  alt,
+  loading,
+  decoding,
+  fetchPriority,
+  className,
+  style,
+  onClick,
+}) {
+  const imgRef = useRef();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (!imgRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry], obs) => {
+        if (entry.isIntersecting) {
+          setVisible(true);
+          obs.disconnect();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(imgRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <img
+      ref={imgRef}
+      src={visible ? src : undefined}
+      data-src={src}
+      alt={alt}
+      loading={loading}
+      decoding={decoding}
+      fetchPriority={fetchPriority}
+      className={className}
+      style={style}
+      onClick={onClick}
+    />
+  );
+}
+
+// Carousel with controls and fullscreen resizing
 export function Carousel({ items }) {
   const [index, setIndex] = useState(0);
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const timeoutRef = useRef(null);
   const containerRef = useRef(null);
-  const touchStartX = useRef(0);
-  const touchEndX = useRef(0);
   const delay = 5000;
 
   useEffect(() => {
@@ -27,15 +70,9 @@ export function Carousel({ items }) {
 
   if (!items.length) return null;
 
-  const handlePrev = () => {
-    clearTimeout(timeoutRef.current);
+  const handlePrev = () =>
     setIndex((i) => (i - 1 + items.length) % items.length);
-  };
-  const handleNext = () => {
-    clearTimeout(timeoutRef.current);
-    setIndex((i) => (i + 1) % items.length);
-  };
-
+  const handleNext = () => setIndex((i) => (i + 1) % items.length);
   const rotateImg = () => setRotation((r) => r + 90);
   const downloadImg = (src) => {
     const link = document.createElement("a");
@@ -51,25 +88,7 @@ export function Carousel({ items }) {
     else document.exitFullscreen();
   };
 
-  // Swipe handlers
-  const onTouchStart = (e) => {
-    touchStartX.current = e.changedTouches[0].screenX;
-  };
-  const onTouchMove = (e) => {
-    touchEndX.current = e.changedTouches[0].screenX;
-  };
-  const onTouchEnd = () => {
-    const threshold = 50; // px to consider swipe
-    if (touchStartX.current - touchEndX.current > threshold) {
-      handleNext();
-    } else if (touchEndX.current - touchStartX.current > threshold) {
-      handlePrev();
-    }
-  };
-
-  // Non-fullscreen carousel height set to 70vh
   const slideHeight = isFullscreen ? "h-screen" : "h-[70vh]";
-  const { src } = items[index];
 
   return (
     <div
@@ -77,22 +96,22 @@ export function Carousel({ items }) {
       className={`relative w-full ${
         isFullscreen ? "h-screen" : "overflow-hidden"
       } rounded-lg mb-4 bg-black`}
-      onTouchStart={onTouchStart}
-      onTouchMove={onTouchMove}
-      onTouchEnd={onTouchEnd}
     >
       <div
-        className="flex transition-transform"
+        className="flex transition-transform duration-500"
         style={{ transform: `translateX(${-index * 100}%)` }}
       >
-        {items.map(({ src }, idx) => (
+        {items.map((item, idx) => (
           <div
             key={idx}
             className={`w-full flex-shrink-0 ${slideHeight} flex items-center justify-center bg-gray-100 relative`}
           >
-            <img
-              src={src}
+            <LazyImage
+              src={item.full}
               alt={`Slide ${idx + 1}`}
+              loading={idx === index ? "eager" : "lazy"}
+              decoding="async"
+              fetchPriority={idx === index ? "high" : "low"}
               className="max-w-full max-h-full object-contain"
               style={{ transform: `rotate(${rotation}deg)` }}
             />
@@ -102,13 +121,19 @@ export function Carousel({ items }) {
 
       {/* Arrows */}
       <button
-        onClick={handlePrev}
+        onClick={() => {
+          clearTimeout(timeoutRef.current);
+          handlePrev();
+        }}
         className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ◀️
       </button>
       <button
-        onClick={handleNext}
+        onClick={() => {
+          clearTimeout(timeoutRef.current);
+          handleNext();
+        }}
         className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ▶️
@@ -129,7 +154,7 @@ export function Carousel({ items }) {
           {isFullscreen ? "❎" : "⏹️"}
         </button>
         <button
-          onClick={() => downloadImg(src)}
+          onClick={() => downloadImg(items[index].full)}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
           ⬇️
@@ -141,7 +166,10 @@ export function Carousel({ items }) {
         {items.map((_, idx) => (
           <button
             key={idx}
-            onClick={() => setIndex(idx)}
+            onClick={() => {
+              clearTimeout(timeoutRef.current);
+              setIndex(idx);
+            }}
             className={`w-2 h-2 rounded-full ${
               idx === index ? "bg-gray-800" : "bg-gray-400"
             }`}
@@ -152,12 +180,10 @@ export function Carousel({ items }) {
   );
 }
 
-// Skeleton Carousel component with 70vh height
+// Skeleton placeholders
 const SkeletonCarousel = () => (
   <div className="animate-pulse bg-gray-200 rounded-lg mb-4 w-full h-[70vh]"></div>
 );
-
-// Skeleton Card for entry placeholders
 const SkeletonCard = () => (
   <div className="animate-pulse bg-white rounded-lg shadow p-4 min-h-64">
     <div className="flex space-x-2 mb-4 w-1/3">
@@ -215,7 +241,7 @@ function EntryCard({ entry }) {
   );
 }
 
-// Dashboard
+// Dashboard component
 export default function Dashboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -237,88 +263,100 @@ export default function Dashboard() {
       <div className="w-full p-4 bg-gray-50">
         <SkeletonCarousel />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-          {Array(6)
-            .fill(0)
-            .map((_, idx) => (
-              <SkeletonCard key={idx} />
-            ))}
+          {Array.from({ length: 6 }).map((_, idx) => (
+            <SkeletonCard key={idx} />
+          ))}
         </div>
       </div>
     );
   }
 
-  const allPhotos = entries.flatMap((e) =>
-    (e.photo_urls || []).map((src) => ({ src }))
+  // Global carousel
+  const carouselItems = entries.flatMap((e) =>
+    (e.photo_urls || []).map((src) => ({ full: src }))
   );
+
+  // Group by person
   const grouped = entries.reduce((acc, e) => {
     const key = e.name || "Unknown";
-    if (!acc[key]) acc[key] = [];
+    acc[key] = acc[key] || [];
     acc[key].push(e);
     return acc;
   }, {});
-  const calcSize = (e) =>
-    (e.memory?.length || 0) +
-    (e.story?.length || 0) +
-    (e.recommendation?.length || 0) +
-    (e.message?.length || 0);
-  const handleThumbClick = (src) => {
-    if ("ontouchstart" in window) window.open(src, "_blank");
-    else setFullscreenImg(src);
+
+  const handleThumbClick = (full) => {
+    if ("ontouchstart" in window) window.open(full, "_blank");
+    else setFullscreenImg(full);
   };
 
   return (
     <div className="w-full p-4 bg-gray-50">
-      <Carousel items={allPhotos} />
+      <Carousel items={carouselItems} />
+
       {fullscreenImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
           onClick={() => setFullscreenImg(null)}
         >
-          <img
+          <LazyImage
             src={fullscreenImg}
-            alt="FullScreen"
+            alt="Fullscreen"
+            loading="eager"
+            decoding="async"
+            fetchPriority="high"
             className="max-w-full max-h-full"
           />
         </div>
       )}
+
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {Object.entries(grouped).map(([name, items]) => (
-          <section
-            key={name}
-            className="bg-white rounded-lg p-4 shadow min-h-64"
-          >
-            <div className="flex items-center mb-2">
-              {items[0]?.selfie_url && (
-                <img
-                  src={items[0].selfie_url}
-                  alt={name}
-                  className="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white"
-                />
-              )}
-              <h2 className="text-xl font-semibold text-black">{name}</h2>
-            </div>
-            <div className="flex space-x-2 overflow-x-auto mb-4 pb-2">
-              {items
-                .flatMap((e) => e.photo_urls || [])
-                .map((src, idx) => (
-                  <img
+        {Object.entries(grouped).map(([name, items]) => {
+          const personPhotos = items.flatMap((e) =>
+            (e.photo_urls || []).map((src) => ({
+              thumb: src.replace("/upload/", "/upload/w_200,h_200,c_fill/"),
+              full: src,
+            }))
+          );
+
+          return (
+            <section key={name} className="bg-white rounded-lg p-4 shadow">
+              <header className="flex items-center mb-2">
+                {items[0]?.selfie_url && (
+                  <LazyImage
+                    src={items[0].selfie_url}
+                    alt={name}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                    className="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white"
+                  />
+                )}
+                <h2 className="text-xl font-semibold text-black">{name}</h2>
+              </header>
+
+              <div className="flex space-x-2 overflow-x-auto mb-4 pb-2">
+                {personPhotos.map((p, idx) => (
+                  <LazyImage
                     key={idx}
-                    src={src}
+                    src={p.thumb}
                     alt={`thumb-${idx}`}
-                    onClick={() => handleThumbClick(src)}
+                    loading="lazy"
+                    decoding="async"
+                    fetchPriority="low"
+                    onClick={() => handleThumbClick(p.full)}
                     className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-75"
                   />
                 ))}
-            </div>
-            <div className="grid grid-flow-row-dense gap-4">
-              {items
-                .sort((a, b) => calcSize(a) - calcSize(b))
-                .map((e, i) => (
+              </div>
+
+              <div className="grid grid-flow-row-dense gap-4">
+                {items.map((e, i) => (
                   <EntryCard key={i} entry={e} />
                 ))}
-            </div>
-          </section>
-        ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </div>
   );
