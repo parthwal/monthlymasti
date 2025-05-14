@@ -21,7 +21,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: #1a202c; /* dark slate */
-    --foreground: #f7f9fc; /* off-white */
+    --foreground: #282828; /* off-white */
     --card-bg: #2d3748; /* gray-800 */
     --accent: #3b82f6; /* blue-500 */
   }
@@ -37,7 +37,6 @@ body {
 .btn {
   @apply inline-block px-4 py-2 font-medium rounded;
   background-color: var(--accent);
-  color: #fff;
 }
 .card {
   background-color: var(--card-bg);
