@@ -177,6 +177,7 @@ function EntryCard({ entry }) {
 }
 
 // Main Dashboard
+
 export default function Dashboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -208,11 +209,23 @@ export default function Dashboard() {
     return acc;
   }, {});
 
+  // Combine lengths for sorting
   const calcSize = (e) =>
     (e.memory?.length || 0) +
     (e.story?.length || 0) +
     (e.recommendation?.length || 0) +
     (e.message?.length || 0);
+
+  // Helper: decide thumbnail click behavior
+  const handleThumbClick = (src) => {
+    if ("ontouchstart" in window) {
+      // On touch devices, open in new tab
+      window.open(src, "_blank");
+    } else {
+      // On desktop, show fullscreen overlay
+      setFullscreenImg(src);
+    }
+  };
 
   return (
     <div className="w-full p-4 bg-gray-50">
@@ -257,7 +270,7 @@ export default function Dashboard() {
                     key={idx}
                     src={src}
                     alt={`thumb-${idx}`}
-                    onClick={() => setFullscreenImg(src)}
+                    onClick={() => handleThumbClick(src)}
                     className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-75"
                   />
                 ))}
