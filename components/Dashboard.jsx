@@ -46,11 +46,12 @@ function LazyImage({
   );
 }
 
-// Carousel with controls and fullscreen resizing
+// Carousel with controls, fullscreen resizing, and swipe support
 export function Carousel({ items }) {
   const [index, setIndex] = useState(0);
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [touchStartX, setTouchStartX] = useState(null);
   const timeoutRef = useRef(null);
   const containerRef = useRef(null);
   const delay = 5000;
@@ -88,11 +89,34 @@ export function Carousel({ items }) {
     else document.exitFullscreen();
   };
 
+  // Touch handlers for swipe
+  const handleTouchStart = (e) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    if (touchStartX === null) return;
+    const currentX = e.touches[0].clientX;
+    const diffX = touchStartX - currentX;
+    if (Math.abs(diffX) > 50) {
+      if (diffX > 0) {
+        clearTimeout(timeoutRef.current);
+        handleNext();
+      } else {
+        clearTimeout(timeoutRef.current);
+        handlePrev();
+      }
+      setTouchStartX(null);
+    }
+  };
+
   const slideHeight = isFullscreen ? "h-screen" : "h-[70vh]";
 
   return (
     <div
       ref={containerRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       className={`relative w-full ${
         isFullscreen ? "h-screen" : "overflow-hidden"
       } rounded-lg mb-4 bg-black`}
