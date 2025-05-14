@@ -13,15 +13,14 @@ export function Carousel({ items }) {
   useEffect(() => {
     clearTimeout(timeoutRef.current);
     setRotation(0);
-    timeoutRef.current = setTimeout(() => handleNext(), delay);
+    timeoutRef.current = setTimeout(handleNext, delay);
     return () => clearTimeout(timeoutRef.current);
   }, [index, items.length]);
 
   useEffect(() => {
-    const changeHandler = () => setIsFullscreen(!!document.fullscreenElement);
-    document.addEventListener("fullscreenchange", changeHandler);
-    return () =>
-      document.removeEventListener("fullscreenchange", changeHandler);
+    const handler = () => setIsFullscreen(!!document.fullscreenElement);
+    document.addEventListener("fullscreenchange", handler);
+    return () => document.removeEventListener("fullscreenchange", handler);
   }, []);
 
   if (!items.length) return null;
@@ -29,8 +28,8 @@ export function Carousel({ items }) {
   const handlePrev = () =>
     setIndex((i) => (i - 1 + items.length) % items.length);
   const handleNext = () => setIndex((i) => (i + 1) % items.length);
-  const rotate = () => setRotation((r) => r + 90);
-  const download = (src) => {
+  const rotateImg = () => setRotation((r) => r + 90);
+  const downloadImg = (src) => {
     const link = document.createElement("a");
     link.href = src;
     link.download = src.split("/").pop() || "image";
@@ -39,15 +38,13 @@ export function Carousel({ items }) {
     document.body.removeChild(link);
   };
 
-  const fullscreen = () => {
+  const toggleFullscreen = () => {
     if (!document.fullscreenElement) containerRef.current?.requestFullscreen();
     else document.exitFullscreen();
   };
 
-  const { src } = items[index];
-  const slideHeight = isFullscreen
-    ? "h-screen"
-    : "h-[70vh] sm:h-[50vh] md:h-[70vh]";
+  const slideHeight = isFullscreen ? "h-screen" : "h-48 sm:h-64 md:h-72";
+  const { src, selfie_url } = items[index];
 
   return (
     <div
@@ -60,13 +57,13 @@ export function Carousel({ items }) {
         className="flex transition-transform"
         style={{ transform: `translateX(${-index * 100}%)` }}
       >
-        {items.map((item, idx) => (
+        {items.map(({ src }, idx) => (
           <div
             key={idx}
             className={`w-full flex-shrink-0 ${slideHeight} flex items-center justify-center bg-gray-100 relative`}
           >
             <img
-              src={item.src}
+              src={src}
               alt={`Slide ${idx + 1}`}
               className="max-w-full max-h-full object-contain"
               style={{ transform: `rotate(${rotation}deg)` }}
@@ -81,7 +78,7 @@ export function Carousel({ items }) {
           clearTimeout(timeoutRef.current);
           handlePrev();
         }}
-        className="absolute top-1/2 left-2 transform -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
+        className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ◀️
       </button>
@@ -90,24 +87,27 @@ export function Carousel({ items }) {
           clearTimeout(timeoutRef.current);
           handleNext();
         }}
-        className="absolute top-1/2 right-2 transform -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
+        className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ▶️
       </button>
 
       {/* Controls */}
       <div className="absolute top-2 right-2 flex space-x-1 z-10">
-        <button onClick={rotate} className="p-1 bg-white bg-opacity-75 rounded">
+        <button
+          onClick={rotateImg}
+          className="p-1 bg-white bg-opacity-75 rounded"
+        >
           🔄
         </button>
         <button
-          onClick={fullscreen}
+          onClick={toggleFullscreen}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
           {isFullscreen ? "❎" : "⏹️"}
         </button>
         <button
-          onClick={() => download(src)}
+          onClick={() => downloadImg(src)}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
           ⬇️
@@ -115,7 +115,7 @@ export function Carousel({ items }) {
       </div>
 
       {/* Dots */}
-      <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-1 z-10">
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex space-x-1 z-10">
         {items.map((_, idx) => (
           <button
             key={idx}
@@ -129,13 +129,27 @@ export function Carousel({ items }) {
           />
         ))}
       </div>
+
+      {/* Selfie */}
+      {selfie_url && (
+        <img
+          src={selfie_url}
+          alt="Uploader"
+          className="absolute bottom-2 right-2 w-8 h-8 border-2 border-white rounded-full object-cover z-10"
+        />
+      )}
     </div>
   );
 }
 
+// Entry card layout
 function EntryCard({ entry }) {
-  const memLong = entry.memory?.length > 80;
-  const stoLong = entry.story?.length > 80;
+  const memClass = `bg-gray-50 p-2 rounded ${
+    entry.memory?.length > 80 ? "md:col-span-2" : ""
+  }`;
+  const stoClass = `bg-gray-50 p-2 rounded ${
+    entry.story?.length > 80 ? "md:col-span-2" : ""
+  }`;
   return (
     <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition flex flex-col">
       <h3 className="text-lg font-semibold mb-1 text-black">
@@ -144,19 +158,13 @@ function EntryCard({ entry }) {
       <p className="text-xs text-gray-500 mb-2">
         {entry.location} • {entry.date?.split("T")[0]}
       </p>
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3 text-gray-950">
-        <div
-          className={`bg-gray-50 p-2 rounded ${memLong ? "md:col-span-2" : ""}`}
-        >
-          📝 {entry.memory}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 mb-3">
+        <div className={memClass}>
+          <p className="text-gray-800 text-sm">📝 {entry.memory}</p>
         </div>
         {entry.story && (
-          <div
-            className={`bg-gray-50 p-2 rounded ${
-              stoLong ? "md:col-span-2" : ""
-            }`}
-          >
-            📖 {entry.story}
+          <div className={stoClass}>
+            <p className="text-gray-800 text-sm">📖 {entry.story}</p>
           </div>
         )}
         {entry.recommendation && (
@@ -176,8 +184,7 @@ function EntryCard({ entry }) {
   );
 }
 
-// Main Dashboard
-
+// Dashboard
 export default function Dashboard() {
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -194,7 +201,41 @@ export default function Dashboard() {
     })();
   }, []);
 
-  if (loading) return <div className="p-2 text-center text-sm">Loading...</div>;
+  // Skeleton components
+  const SkeletonCarousel = () => (
+    <div className="animate-pulse bg-gray-200 rounded-lg mb-4 w-full h-48 sm:h-64 md:h-72"></div>
+  );
+  const SkeletonCard = () => (
+    <div className="animate-pulse bg-white rounded-lg shadow p-4">
+      <div className="flex space-x-2 mb-4 w-1/3">
+        <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+        <div className="h-6 bg-gray-200 rounded flex-1"></div>
+      </div>
+      <div className="h-12 bg-gray-200 rounded w-full mb-4"></div>
+      <div className="space-y-2">
+        <div className="h-4 bg-gray-200 rounded"></div>
+        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+      </div>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="w-full p-4 bg-gray-50">
+        {/* Carousel placeholder */}
+        <SkeletonCarousel />
+        {/* Entry cards skeleton grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+          {Array(6)
+            .fill(0)
+            .map((_, idx) => (
+              <SkeletonCard key={idx} />
+            ))}
+        </div>
+      </div>
+    );
+  }
 
   // Top-level carousel
   const allPhotos = entries.flatMap((e) =>
@@ -209,20 +250,17 @@ export default function Dashboard() {
     return acc;
   }, {});
 
-  // Combine lengths for sorting
   const calcSize = (e) =>
     (e.memory?.length || 0) +
     (e.story?.length || 0) +
     (e.recommendation?.length || 0) +
     (e.message?.length || 0);
 
-  // Helper: decide thumbnail click behavior
+  // Thumbnail click handler
   const handleThumbClick = (src) => {
     if ("ontouchstart" in window) {
-      // On touch devices, open in new tab
       window.open(src, "_blank");
     } else {
-      // On desktop, show fullscreen overlay
       setFullscreenImg(src);
     }
   };
