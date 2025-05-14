@@ -43,8 +43,9 @@ export function Carousel({ items }) {
     else document.exitFullscreen();
   };
 
-  const slideHeight = isFullscreen ? "h-screen" : "h-48 sm:h-64 md:h-72";
-  const { src, selfie_url } = items[index];
+  // Non-fullscreen carousel height set to 70vh
+  const slideHeight = isFullscreen ? "h-screen" : "h-[70vh]";
+  const { src } = items[index];
 
   return (
     <div
@@ -129,18 +130,30 @@ export function Carousel({ items }) {
           />
         ))}
       </div>
-
-      {/* Selfie */}
-      {selfie_url && (
-        <img
-          src={selfie_url}
-          alt="Uploader"
-          className="absolute bottom-2 right-2 w-8 h-8 border-2 border-white rounded-full object-cover z-10"
-        />
-      )}
     </div>
   );
 }
+
+// Skeleton Carousel component with 70vh height
+const SkeletonCarousel = () => (
+  <div className="animate-pulse bg-gray-200 rounded-lg mb-4 w-full h-[70vh]"></div>
+);
+
+// Skeleton Card for entry placeholders
+const SkeletonCard = () => (
+  <div className="animate-pulse bg-white rounded-lg shadow p-4 min-h-64">
+    <div className="flex space-x-2 mb-4 w-1/3">
+      <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
+      <div className="h-6 bg-gray-200 rounded flex-1"></div>
+    </div>
+    <div className="h-12 bg-gray-200 rounded w-full mb-4"></div>
+    <div className="space-y-2">
+      <div className="h-4 bg-gray-200 rounded"></div>
+      <div className="h-4 bg-gray-200 rounded w-5/6"></div>
+      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+    </div>
+  </div>
+);
 
 // Entry card layout
 function EntryCard({ entry }) {
@@ -151,7 +164,7 @@ function EntryCard({ entry }) {
     entry.story?.length > 80 ? "md:col-span-2" : ""
   }`;
   return (
-    <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition flex flex-col">
+    <div className="bg-white rounded-lg shadow p-4 hover:shadow-md transition flex flex-col min-h-64">
       <h3 className="text-lg font-semibold mb-1 text-black">
         {entry.short_desc}
       </h3>
@@ -201,31 +214,10 @@ export default function Dashboard() {
     })();
   }, []);
 
-  // Skeleton components
-  const SkeletonCarousel = () => (
-    <div className="animate-pulse bg-gray-200 rounded-lg mb-4 w-full h-48 sm:h-64 md:h-72"></div>
-  );
-  const SkeletonCard = () => (
-    <div className="animate-pulse bg-white rounded-lg shadow p-4">
-      <div className="flex space-x-2 mb-4 w-1/3">
-        <div className="h-8 w-8 bg-gray-200 rounded-full"></div>
-        <div className="h-6 bg-gray-200 rounded flex-1"></div>
-      </div>
-      <div className="h-12 bg-gray-200 rounded w-full mb-4"></div>
-      <div className="space-y-2">
-        <div className="h-4 bg-gray-200 rounded"></div>
-        <div className="h-4 bg-gray-200 rounded w-5/6"></div>
-        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-      </div>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="w-full p-4 bg-gray-50">
-        {/* Carousel placeholder */}
         <SkeletonCarousel />
-        {/* Entry cards skeleton grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {Array(6)
             .fill(0)
@@ -237,38 +229,28 @@ export default function Dashboard() {
     );
   }
 
-  // Top-level carousel
   const allPhotos = entries.flatMap((e) =>
     (e.photo_urls || []).map((src) => ({ src }))
   );
-
-  // Group by user
   const grouped = entries.reduce((acc, e) => {
     const key = e.name || "Unknown";
     if (!acc[key]) acc[key] = [];
     acc[key].push(e);
     return acc;
   }, {});
-
   const calcSize = (e) =>
     (e.memory?.length || 0) +
     (e.story?.length || 0) +
     (e.recommendation?.length || 0) +
     (e.message?.length || 0);
-
-  // Thumbnail click handler
   const handleThumbClick = (src) => {
-    if ("ontouchstart" in window) {
-      window.open(src, "_blank");
-    } else {
-      setFullscreenImg(src);
-    }
+    if ("ontouchstart" in window) window.open(src, "_blank");
+    else setFullscreenImg(src);
   };
 
   return (
     <div className="w-full p-4 bg-gray-50">
       <Carousel items={allPhotos} />
-
       {fullscreenImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50"
@@ -281,29 +263,26 @@ export default function Dashboard() {
           />
         </div>
       )}
-
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-        {Object.entries(grouped).map(([name, items]) => {
-          const selfieUrl = items[0]?.selfie_url;
-          const userPhotos = items.flatMap((e) => e.photo_urls || []);
-          const sorted = items.sort((a, b) => calcSize(a) - calcSize(b));
-
-          return (
-            <section key={name} className="bg-white rounded-lg p-4 shadow">
-              <div className="flex items-center mb-2">
-                {selfieUrl && (
-                  <img
-                    src={selfieUrl}
-                    alt={`${name}`}
-                    className="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white"
-                  />
-                )}
-                <h2 className="text-xl font-semibold text-black">{name}</h2>
-              </div>
-
-              {/* Stacked thumbnails */}
-              <div className="flex space-x-2 overflow-x-auto mb-4 pb-2">
-                {userPhotos.map((src, idx) => (
+        {Object.entries(grouped).map(([name, items]) => (
+          <section
+            key={name}
+            className="bg-white rounded-lg p-4 shadow min-h-64"
+          >
+            <div className="flex items-center mb-2">
+              {items[0]?.selfie_url && (
+                <img
+                  src={items[0].selfie_url}
+                  alt={name}
+                  className="w-8 h-8 rounded-full object-cover mr-2 border-2 border-white"
+                />
+              )}
+              <h2 className="text-xl font-semibold text-black">{name}</h2>
+            </div>
+            <div className="flex space-x-2 overflow-x-auto mb-4 pb-2">
+              {items
+                .flatMap((e) => e.photo_urls || [])
+                .map((src, idx) => (
                   <img
                     key={idx}
                     src={src}
@@ -312,16 +291,16 @@ export default function Dashboard() {
                     className="w-16 h-16 object-cover rounded cursor-pointer hover:opacity-75"
                   />
                 ))}
-              </div>
-
-              <div className="grid grid-flow-row-dense gap-4">
-                {sorted.map((e, i) => (
+            </div>
+            <div className="grid grid-flow-row-dense gap-4">
+              {items
+                .sort((a, b) => calcSize(a) - calcSize(b))
+                .map((e, i) => (
                   <EntryCard key={i} entry={e} />
                 ))}
-              </div>
-            </section>
-          );
-        })}
+            </div>
+          </section>
+        ))}
       </div>
     </div>
   );
