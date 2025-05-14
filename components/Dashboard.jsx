@@ -1,13 +1,15 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabase";
 
-// Carousel with controls and fullscreen resizing
+// Carousel with controls, fullscreen resizing, and mobile swipe
 export function Carousel({ items }) {
   const [index, setIndex] = useState(0);
   const [rotation, setRotation] = useState(0);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const timeoutRef = useRef(null);
   const containerRef = useRef(null);
+  const touchStartX = useRef(0);
+  const touchEndX = useRef(0);
   const delay = 5000;
 
   useEffect(() => {
@@ -25,9 +27,15 @@ export function Carousel({ items }) {
 
   if (!items.length) return null;
 
-  const handlePrev = () =>
+  const handlePrev = () => {
+    clearTimeout(timeoutRef.current);
     setIndex((i) => (i - 1 + items.length) % items.length);
-  const handleNext = () => setIndex((i) => (i + 1) % items.length);
+  };
+  const handleNext = () => {
+    clearTimeout(timeoutRef.current);
+    setIndex((i) => (i + 1) % items.length);
+  };
+
   const rotateImg = () => setRotation((r) => r + 90);
   const downloadImg = (src) => {
     const link = document.createElement("a");
@@ -43,6 +51,22 @@ export function Carousel({ items }) {
     else document.exitFullscreen();
   };
 
+  // Swipe handlers
+  const onTouchStart = (e) => {
+    touchStartX.current = e.changedTouches[0].screenX;
+  };
+  const onTouchMove = (e) => {
+    touchEndX.current = e.changedTouches[0].screenX;
+  };
+  const onTouchEnd = () => {
+    const threshold = 50; // px to consider swipe
+    if (touchStartX.current - touchEndX.current > threshold) {
+      handleNext();
+    } else if (touchEndX.current - touchStartX.current > threshold) {
+      handlePrev();
+    }
+  };
+
   // Non-fullscreen carousel height set to 70vh
   const slideHeight = isFullscreen ? "h-screen" : "h-[70vh]";
   const { src } = items[index];
@@ -53,6 +77,9 @@ export function Carousel({ items }) {
       className={`relative w-full ${
         isFullscreen ? "h-screen" : "overflow-hidden"
       } rounded-lg mb-4 bg-black`}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
     >
       <div
         className="flex transition-transform"
@@ -75,19 +102,13 @@ export function Carousel({ items }) {
 
       {/* Arrows */}
       <button
-        onClick={() => {
-          clearTimeout(timeoutRef.current);
-          handlePrev();
-        }}
+        onClick={handlePrev}
         className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ◀️
       </button>
       <button
-        onClick={() => {
-          clearTimeout(timeoutRef.current);
-          handleNext();
-        }}
+        onClick={handleNext}
         className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
         ▶️
@@ -120,10 +141,7 @@ export function Carousel({ items }) {
         {items.map((_, idx) => (
           <button
             key={idx}
-            onClick={() => {
-              clearTimeout(timeoutRef.current);
-              setIndex(idx);
-            }}
+            onClick={() => setIndex(idx)}
             className={`w-2 h-2 rounded-full ${
               idx === index ? "bg-gray-800" : "bg-gray-400"
             }`}
