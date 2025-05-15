@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../components/AuthContext";
 import { FaGoogle } from "react-icons/fa";
+import Link from "next/link";
 
 export default function LoginPage() {
   const { user, loading, signIn, signInWithProvider } = useAuth();

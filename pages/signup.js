@@ -12,7 +12,7 @@ export default function SignUp() {
 
   useEffect(() => {
     if (user) router.replace("/");
-  }, [user, loading, router]);
+  }, [user, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
