@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "../components/AuthContext";
+import Link from "next/link";
 
 export default function SignUp() {
   const { signUp, user } = useAuth();
@@ -82,8 +83,7 @@ export default function SignUp() {
           </form>
 
           <p className="mt-6 text-center text-sm text-gray-500">
-            Already have an account?{" "}
-            <<Link href="/login/">Log in</Link>
+            Already have an account? <Link href="/login/">Log in</Link>
           </p>
         </div>
       </div>
