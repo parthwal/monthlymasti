@@ -1,5 +1,17 @@
 import { useEffect, useState, useRef } from "react";
 import { supabase } from "../lib/supabaseClient";
+import {
+  FaChevronLeft,
+  FaChevronRight,
+  FaRedo,
+  FaExpand,
+  FaCompress,
+  FaDownload,
+  FaStickyNote,
+  FaBookOpen,
+  FaHeadphones,
+  FaQuoteLeft,
+} from "react-icons/fa";
 
 // LazyImage: loads src only when near viewport
 function LazyImage({
@@ -151,7 +163,7 @@ export function Carousel({ items }) {
         }}
         className="absolute top-1/2 left-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
-        ◀️
+        <FaChevronLeft />
       </button>
       <button
         onClick={() => {
@@ -160,7 +172,7 @@ export function Carousel({ items }) {
         }}
         className="absolute top-1/2 right-2 -translate-y-1/2 p-2 bg-white bg-opacity-75 rounded z-10"
       >
-        ▶️
+        <FaChevronRight />
       </button>
 
       {/* Controls */}
@@ -169,19 +181,19 @@ export function Carousel({ items }) {
           onClick={rotateImg}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
-          🔄
+          <FaRedo />
         </button>
         <button
           onClick={toggleFullscreen}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
-          {isFullscreen ? "❎" : "⏹️"}
+          {isFullscreen ? <FaCompress /> : <FaExpand />}
         </button>
         <button
           onClick={() => downloadImg(items[index].full)}
           className="p-1 bg-white bg-opacity-75 rounded"
         >
-          ⬇️
+          <FaDownload />
         </button>
       </div>
 

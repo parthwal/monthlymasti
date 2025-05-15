@@ -3,7 +3,7 @@
 :root {
   /* Base neutrals */
   --background: #f7f9fc; /* very light gray */
-  --foreground: #1a202c; /* dark slate */
+  --foreground: #f7f9fc; /* dark slate */
   --card-bg: #ffffff; /* pure white cards */
   /* Accent */
   --accent: #2563eb; /* blue-600 */
@@ -20,7 +20,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #1a202c; /* dark slate */
+    --background: #f7f9fc; /* dark slate */
     --foreground: #282828; /* off-white */
     --card-bg: #2d3748; /* gray-800 */
     --accent: #3b82f6; /* blue-500 */
@@ -47,4 +47,11 @@ body {
 a {
   color: var(--accent);
   text-decoration: underline;
+}
+
+.input {
+  @apply w-full p-2 border border-gray-300 rounded mb-2 focus:ring-indigo-500 focus:border-indigo-500;
+}
+.btn {
+  @apply bg-indigo-600 text-white py-2 rounded hover:bg-indigo-700 transition;
 }
