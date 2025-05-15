@@ -15,7 +15,7 @@ export default function HomePage() {
     if (!loading && !user) {
       router.replace("/login");
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   // Don't render anything if user is not authenticated and redirect is pending
   if (!user) return null;

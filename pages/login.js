@@ -14,7 +14,7 @@ export default function LoginPage() {
     if (!loading && user) {
       router.replace("/");
     }
-  }, [user, loading]);
+  }, [user, loading, router]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -107,13 +107,7 @@ export default function LoginPage() {
           </form>
 
           <p className=" text-center text-sm text-gray-500">
-            Don’t have an account?{" "}
-            <a
-              href="/signup"
-              className="text-indigo-600 hover:underline font-medium"
-            >
-              Sign up
-            </a>
+            Don’t have an account? <Link href="/signup/">Sign up</Link>
           </p>
         </div>
       </div>
